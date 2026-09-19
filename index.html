@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lane Bluff Duel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Lane Bluff Duel</h1>
+      <p class="rules">Commit a card to a lane. Face-up = effect now. Face-down = bluff until reveal. Win 2 of 3 lanes.</p>
+    </header>
+
+    <section id="mode-screen" class="screen">
+      <p class="hint">Pick a mode. No accounts — just play.</p>
+      <button type="button" data-mode="ai">Vs dumb AI</button>
+      <button type="button" data-mode="hotseat">Hotseat (pass &amp; play)</button>
+    </section>
+
+    <section id="game-screen" class="screen hidden">
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="board" class="board"></div>
+      <div id="hand" class="hand"></div>
+      <div id="actions" class="actions hidden">
+        <button type="button" id="btn-face-up">Face-up (effect now)</button>
+        <button type="button" id="btn-face-down">Face-down (bluff)</button>
+        <button type="button" id="btn-cancel" class="ghost">Cancel</button>
+      </div>
+      <div id="peek-banner" class="peek hidden"></div>
+    </section>
+
+    <section id="end-screen" class="screen hidden">
+      <h2 id="end-title"></h2>
+      <p id="end-detail"></p>
+      <button type="button" id="btn-rematch">Rematch</button>
+      <button type="button" id="btn-mode" class="ghost">Change mode</button>
+    </section>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
