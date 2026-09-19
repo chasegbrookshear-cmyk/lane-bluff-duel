@@ -156,16 +156,11 @@
         const card = lane[player];
         if (card) {
           const mini = document.createElement("div");
-          if (canSeeIdentity(player, card)) {
-            if (card.faceUp || card.revealed || state.phase !== "place") {
-              mini.className = "card-mini face-up";
-              const pwr = card.power + (card.powerMod || 0);
-              mini.innerHTML = `<span class="pwr">${pwr}</span> ${card.name}<div class="meta">${card.effectText}</div>`;
-            } else {
-              mini.className = "card-mini face-down";
-              const band = powerBand(card.power);
-              mini.innerHTML = `Bluff · <span class="band">${band}</span> · <strong>${card.name}</strong> (${card.power})`;
-            }
+          // During place: face-down on board is band-only for everyone (hand still has full info).
+          if (card.faceUp || card.revealed || state.phase !== "place") {
+            mini.className = "card-mini face-up";
+            const pwr = card.power + (card.powerMod || 0);
+            mini.innerHTML = `<span class="pwr">${pwr}</span> ${card.name}<div class="meta">${card.effectText}</div>`;
           } else {
             mini.className = "card-mini face-down";
             mini.innerHTML = `Face-down · <span class="band">${powerBand(card.power)}</span>`;
@@ -244,12 +239,9 @@
       return;
     }
     if (card.effect === "swap") {
-      const others = [0, 1, 2].filter((i) => i !== laneIndex);
-      const target = others[Math.floor(Math.random() * others.length)];
-      const tmp = state.lanes[laneIndex][player];
-      state.lanes[laneIndex][player] = state.lanes[target][player];
-      state.lanes[target][player] = tmp;
-      state.peekMsg = `Swap: card moved to Lane ${target + 1}.`;
+      // Defer swap until both players filled all 3 lanes (Designer reveal timing).
+      card.pendingSwap = true;
+      state.peekMsg = "";
     }
   }
 
@@ -283,6 +275,7 @@
       sessionStarted = true;
       ping("session_start");
     }
+    if (card.effect === "swap") card.pendingSwap = true; // resolve at board reveal
     if (faceUp) applyFaceUpEffect(state.turn, pendingLane, card);
     else state.peekMsg = "";
     el.actions.classList.add("hidden");
@@ -307,8 +300,25 @@
     commit(faceUp);
   }
 
+  function applyPendingSwaps() {
+    // Apply each pending swap once; random empty-or-any other lane for that player.
+    ["p1", "p2"].forEach((player) => {
+      for (let i = 0; i < 3; i++) {
+        const card = state.lanes[i][player];
+        if (!card || !card.pendingSwap) continue;
+        card.pendingSwap = false;
+        const others = [0, 1, 2].filter((j) => j !== i);
+        const target = others[Math.floor(Math.random() * others.length)];
+        const tmp = state.lanes[i][player];
+        state.lanes[i][player] = state.lanes[target][player];
+        state.lanes[target][player] = tmp;
+      }
+    });
+  }
+
   function resolveBoard() {
     state.phase = "resolve";
+    applyPendingSwaps();
     state.lanes.forEach((l) => {
       if (l.p1) l.p1.revealed = true;
       if (l.p2) l.p2.revealed = true;
