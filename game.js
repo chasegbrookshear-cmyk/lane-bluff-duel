@@ -28,6 +28,27 @@
   let state = null;
   let selectedCardId = null;
   let pendingLane = null;
+  let sessionStarted = false;
+
+  // Tiny session telemetry for Growth (no ads/accounts). Readable via:
+  // https://abacus.jasoncameron.dev/get/ship-lab-lbd/session_start
+  // https://abacus.jasoncameron.dev/get/ship-lab-lbd/mode_ai
+  // https://abacus.jasoncameron.dev/get/ship-lab-lbd/mode_hotseat
+  function ping(key) {
+    try {
+      const url = "https://abacus.jasoncameron.dev/hit/ship-lab-lbd/" + encodeURIComponent(key);
+      if (navigator.sendBeacon) navigator.sendBeacon(url);
+      else fetch(url, { mode: "no-cors", keepalive: true }).catch(() => {});
+    } catch (_) {}
+  }
+
+  function powerBand(power) {
+    if (power <= 2) return "Low";
+    if (power === 3) return "Mid";
+    return "High";
+  }
+
+
 
   function shuffle(arr) {
     const a = arr.slice();
@@ -43,6 +64,7 @@
   }
 
   function startGame(mode) {
+    if (mode === "ai" || mode === "hotseat") ping("mode_" + mode);
     const deck = shuffle(CARDS).map(cloneCard);
     state = {
       mode,
@@ -141,11 +163,12 @@
               mini.innerHTML = `<span class="pwr">${pwr}</span> ${card.name}<div class="meta">${card.effectText}</div>`;
             } else {
               mini.className = "card-mini face-down";
-              mini.innerHTML = `Bluff · <strong>${card.name}</strong> (${card.power})`;
+              const band = powerBand(card.power);
+              mini.innerHTML = `Bluff · <span class="band">${band}</span> · <strong>${card.name}</strong> (${card.power})`;
             }
           } else {
             mini.className = "card-mini face-down";
-            mini.textContent = "Face-down bluff";
+            mini.innerHTML = `Face-down · <span class="band">${powerBand(card.power)}</span>`;
           }
           slot.appendChild(mini);
         } else if (
@@ -253,6 +276,13 @@
     card.revealed = faceUp;
     card.powerMod = 0;
     state.lanes[pendingLane][state.turn] = card;
+    // Session start = mode chosen + first human card placed (once per page load)
+    const humanPlace =
+      state.mode === "hotseat" || (state.mode === "ai" && state.turn === "p1");
+    if (humanPlace && !sessionStarted) {
+      sessionStarted = true;
+      ping("session_start");
+    }
     if (faceUp) applyFaceUpEffect(state.turn, pendingLane, card);
     else state.peekMsg = "";
     el.actions.classList.add("hidden");
