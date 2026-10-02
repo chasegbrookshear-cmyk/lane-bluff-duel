@@ -37,8 +37,8 @@
   function ping(key) {
     try {
       const url = "https://abacus.jasoncameron.dev/hit/ship-lab-lbd/" + encodeURIComponent(key);
-      if (navigator.sendBeacon) navigator.sendBeacon(url);
-      else fetch(url, { mode: "no-cors", keepalive: true }).catch(() => {});
+      // abacus only counts GET /hit, so always send a GET (beacons are POSTs and were never counted)
+      fetch(url, { method: "GET", mode: "no-cors", keepalive: true, cache: "no-store" }).catch(() => {});
     } catch (_) {}
   }
 
